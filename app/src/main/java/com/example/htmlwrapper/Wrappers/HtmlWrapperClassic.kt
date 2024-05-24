@@ -24,7 +24,7 @@ class HtmlWrapperClassic : HtmlWrapper {
         }
         doc.body().traverse(nodeVisitor)
         var sentenceIndex = 1
-        val regex = regexPattern.toRegex()
+        val regex = REGEX_PATTERN.toRegex()
         allTexts.forEach { node ->
             if (regex.containsMatchIn(node.text())) {
                 returnNodesBySplit(node).forEach {
@@ -42,7 +42,7 @@ class HtmlWrapperClassic : HtmlWrapper {
 
     // Делим строку, если в строке несколько предложений.
     private fun returnNodesBySplit(node: TextNode): List<Node> {
-        val matcher = Pattern.compile(patternString).matcher(node.text())
+        val matcher = Pattern.compile(PATTERN_SENTENCE).matcher(node.text())
         val splitedIndexes = mutableListOf<Int>(0)
         while (matcher.find()) {
             splitedIndexes.add(matcher.end() - 1)
@@ -58,7 +58,7 @@ class HtmlWrapperClassic : HtmlWrapper {
     }
 
     companion object {
-        private const val regexPattern = "(\\.\\.\\.|[.!?])"
-        private const val patternString = "([.!?])\\s*"
+        private const val REGEX_PATTERN = "(\\.\\.\\.|[.!?])"
+        private const val PATTERN_SENTENCE = "([.!?])\\s*"
     }
 }
