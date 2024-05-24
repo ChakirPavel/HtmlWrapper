@@ -5,34 +5,31 @@ import java.util.regex.Pattern
 
 class HtmlWrapperParagraph : HtmlWrapper {
 
-    private val pattern = Pattern.compile("([.!?])\\s*")
-    private val tagParagraph = "p"
-    private var sentenceIndex = 1
-    private val startSpan get() = "<span id=\"tts${sentenceIndex++}\">"
-    private val endSpan get() = "</span>"
-
+    private fun getStartSpan(index: Int) = "<span id=\"tts${index}\">"
 
     override fun wrapHtmlWithSpan(html: String): String {
         val document = Jsoup.parse(html)
         val paragraphs = document.select(tagParagraph)
-        sentenceIndex = 1
+        var sentenceIndex = 1
 
         paragraphs.forEach { paragraph ->
             val paragraphText = paragraph.html()
-            val matcher = pattern.matcher(paragraph.html())
+            val matcher = Pattern.compile(
+                patternString
+            ).matcher(paragraph.html())
             val result = StringBuilder()
             var lastIndex = 0
 
             while (matcher.find()) {
                 val end = matcher.end()
-                result.append(startSpan)
+                result.append(getStartSpan(index = sentenceIndex++))
                 result.append(paragraphText.substring(lastIndex, matcher.end(1)).trim())
                 result.append(endSpan)
                 lastIndex = end
             }
             // Добавляем оставшийся текст, если есть
             if (lastIndex < paragraphText.length) {
-                result.append(startSpan)
+                result.append(getStartSpan(index = sentenceIndex++))
                 result.append(paragraphText.substring(lastIndex).trim())
                 result.append(endSpan)
             }
@@ -40,5 +37,11 @@ class HtmlWrapperParagraph : HtmlWrapper {
         }
 
         return paragraphs.joinToString("\n") { it.outerHtml() }
+    }
+
+    companion object {
+        private const val endSpan = "</span>"
+        private const val tagParagraph = "p"
+        private const val patternString = "([.!?])\\s*"
     }
 }

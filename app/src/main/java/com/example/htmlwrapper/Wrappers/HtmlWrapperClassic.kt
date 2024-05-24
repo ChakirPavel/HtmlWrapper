@@ -8,10 +8,7 @@ import org.jsoup.select.NodeVisitor
 import java.util.regex.Pattern
 
 class HtmlWrapperClassic : HtmlWrapper {
-    private val regex = "(\\.\\.\\.|[.!?])".toRegex()
-    private var sentenceIndex = 1
-    private val spanWrapper get() = "<span id=\"tts${sentenceIndex}\"></span>"
-    private val pattern = Pattern.compile("([.!?])\\s*")
+    private fun getSpanWrapper(index: Int) = "<span id=\"tts${index}\"></span>"
 
     override fun wrapHtmlWithSpan(html: String): String {
         val doc: Document = Jsoup.parse(html)
@@ -26,12 +23,16 @@ class HtmlWrapperClassic : HtmlWrapper {
             }
         }
         doc.body().traverse(nodeVisitor)
-        sentenceIndex = 1
+        var sentenceIndex = 1
+        val regex = regexPattern.toRegex()
         allTexts.forEach { node ->
             if (regex.containsMatchIn(node.text())) {
-                splitTextWithSpans(node)
+                returnNodesBySplit(node).forEach {
+                    it.wrap(getSpanWrapper(sentenceIndex))
+                    sentenceIndex++
+                }
             } else {
-                node.wrap(spanWrapper)
+                node.wrap(getSpanWrapper(sentenceIndex))
             }
         }
 
@@ -39,8 +40,9 @@ class HtmlWrapperClassic : HtmlWrapper {
         return doc.body().html()
     }
 
-    private fun splitTextWithSpans(node: TextNode) {
-        val matcher = pattern.matcher(node.text())
+    // Делим строку, если в строке несколько предложений.
+    private fun returnNodesBySplit(node: TextNode): List<Node> {
+        val matcher = Pattern.compile(patternString).matcher(node.text())
         val splitedIndexes = mutableListOf<Int>(0)
         while (matcher.find()) {
             splitedIndexes.add(matcher.end() - 1)
@@ -52,9 +54,11 @@ class HtmlWrapperClassic : HtmlWrapper {
                 nodesForWrap.add(node.splitText(it))
             }
         }
-        nodesForWrap.reversed().forEach {
-            it.wrap(spanWrapper)
-            sentenceIndex++
-        }
+        return nodesForWrap.reversed()
+    }
+
+    companion object {
+        private const val regexPattern = "(\\.\\.\\.|[.!?])"
+        private const val patternString = "([.!?])\\s*"
     }
 }
